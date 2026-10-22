@@ -1,0 +1,265 @@
+(function script(config) {
+  const canvas = document.getElementById('paper'),
+    frame = document.getElementById('paper-frame');
+  const back = document.getElementById('zoom-back');
+  let paperHeight = config.height || 1430;
+  let zoom = 1,
+    fit = 1,
+    focused = null;
+  const post = payload => {
+    if (window.ReactNativeWebView) window.ReactNativeWebView.postMessage(JSON.stringify(payload));
+  };
+  const scale = next => {
+    zoom = next;
+    canvas.style.transform = 'scale(' + zoom + ')';
+    frame.style.width = 1000 * zoom + 'px';
+    frame.style.height = paperHeight * zoom + 'px';
+    back.hidden = Math.abs(zoom - fit) < 0.02;
+    back.style.left = Math.max(10, document.documentElement.clientWidth - 190) + 'px';
+    back.style.right = 'auto';
+    back.style.width = '176px';
+  };
+  const positionFocused = () => {
+    if (!focused) return;
+    const x = parseFloat(focused.style.left) || 0,
+      y = parseFloat(focused.style.top) || 0;
+    const width = parseFloat(focused.style.width) || 200;
+    const top = frame.offsetTop;
+    window.scrollTo({
+      left: Math.max(0, (x + Math.min(width, 350) / 2) * zoom - document.documentElement.clientWidth / 2),
+      top: Math.max(0, top + y * zoom - 75),
+      behavior: 'auto'
+    });
+  };
+  const fitPage = () => {
+    fit = Math.min(1, (document.documentElement.clientWidth - 20) / 1000);
+    if (!focused) scale(fit);
+  };
+  window.updatePaperLayout = next => {
+    paperHeight = next.height;
+    canvas.style.height = paperHeight + 'px';
+    const svg = canvas.querySelector('.ruling');
+    svg.setAttribute('viewBox', '0 0 1000 ' + paperHeight);
+    svg.querySelector('rect').setAttribute('height', String(paperHeight));
+    const inputs = canvas.querySelectorAll('[data-report-field]');
+    next.fields.forEach((field, i) => { inputs[i].style.top = field.y + 'px'; inputs[i].style.height = field.h + 'px'; });
+    const rules = svg.querySelectorAll('[data-line-index]');
+    next.lines.forEach((line, i) => { rules[i].setAttribute('y1', String(line.y1)); rules[i].setAttribute('y2', String(line.y2)); });
+    const labels = svg.querySelectorAll('[data-text-index]');
+    next.texts.forEach((text, i) => labels[i].setAttribute('y', String(text.y)));
+    const choices = canvas.querySelectorAll('[data-choice-index]');
+    next.choices.forEach((choice, i) => choices[i].style.top = choice.y + 'px');
+    scale(zoom);
+  };
+  fitPage();
+  window.addEventListener('resize', () => {
+    fitPage();
+    if (focused) setTimeout(positionFocused, 150);
+  });
+  back.onclick = () => {
+    const y = window.scrollY,
+      previous = zoom;
+    if (focused) focused.blur();
+    focused = null;
+    scale(fit);
+    window.scrollTo({
+      left: 0,
+      top: Math.max(0, y * fit / previous),
+      behavior: 'smooth'
+    });
+  };
+  document.querySelectorAll('[data-field]').forEach(input => {
+    input.addEventListener('focus', () => {
+      if (input.dataset.field === 'recipient') return;
+      focused = input;
+      scale(Math.max(fit, 1.2));
+      requestAnimationFrame(positionFocused);
+      setTimeout(positionFocused, 350);
+    });
+    input.addEventListener('input', () => post({
+      type: 'field',
+      path: input.dataset.field,
+      value: input.value
+    }));
+    input.addEventListener('keydown', event => {
+      if (event.key === 'Enter' && input.tagName !== 'TEXTAREA') {
+        event.preventDefault();
+        input.blur();
+        focused = null;
+        scale(fit);
+        window.scrollTo({
+          left: 0,
+          top: parseFloat(input.style.top) * fit,
+          behavior: 'smooth'
+        });
+      }
+    });
+  });
+  const dateButton = document.querySelector('[data-date-picker]');
+  let calendar = null;
+  const closeCalendar = () => { if (calendar) calendar.remove(); calendar = null; };
+  if (dateButton) dateButton.onclick = () => {
+    if (calendar) { closeCalendar(); return; }
+    const parts = dateButton.textContent.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/);
+    const selected = parts ? new Date(+parts[3], +parts[2]-1, +parts[1]) : null;
+    const month = selected ? new Date(selected.getFullYear(), selected.getMonth(), 1) : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    calendar = document.createElement('div');
+    calendar.className = 'date-calendar';
+    calendar.setAttribute('role','dialog');
+    calendar.setAttribute('aria-label','Tarih seç');
+    const rect = dateButton.getBoundingClientRect();
+    const width = Math.min(300, document.documentElement.clientWidth - 20);
+    calendar.style.width = width + 'px';
+    calendar.style.left = Math.max(10, Math.min(rect.left, document.documentElement.clientWidth-width-10)) + 'px';
+    calendar.style.top = (rect.bottom + 6) + 'px';
+    const render = () => {
+      calendar.textContent = '';
+      const header = document.createElement('div'); header.className = 'calendar-header';
+      const previous = document.createElement('button'); previous.textContent = '‹'; previous.setAttribute('aria-label','Önceki ay');
+      previous.onclick = () => {month.setMonth(month.getMonth()-1);render();};
+      const title = document.createElement('strong'); title.textContent = month.toLocaleDateString('tr-TR',{month:'long',year:'numeric'});
+      const next = document.createElement('button'); next.textContent = '›'; next.setAttribute('aria-label','Sonraki ay');
+      next.onclick = () => {month.setMonth(month.getMonth()+1);render();};
+      header.appendChild(previous);header.appendChild(title);header.appendChild(next);calendar.appendChild(header);
+      const grid = document.createElement('div');grid.className = 'calendar-grid';
+      ['Pt','Sa','Ça','Pe','Cu','Ct','Pz'].forEach(day=>{const label=document.createElement('span');label.textContent=day;grid.appendChild(label);});
+      const offset = (month.getDay()+6)%7;
+      for(let i=0;i<offset;i++)grid.appendChild(document.createElement('span'));
+      const days = new Date(month.getFullYear(),month.getMonth()+1,0).getDate();
+      for(let day=1;day<=days;day++){
+        const button = document.createElement('button');button.textContent=String(day);
+        if(selected && selected.getFullYear()===month.getFullYear() && selected.getMonth()===month.getMonth() && selected.getDate()===day)button.className='selected-day';
+        button.onclick = () => {
+          const value=String(day).padStart(2,'0')+'.'+String(month.getMonth()+1).padStart(2,'0')+'.'+month.getFullYear();
+          dateButton.textContent=value;post({type:'field',path:'date',value});closeCalendar();
+        };
+        grid.appendChild(button);
+      }
+      calendar.appendChild(grid);
+      const cancel=document.createElement('button');cancel.textContent='Vazgeç';cancel.className='calendar-cancel';cancel.onclick=closeCalendar;calendar.appendChild(cancel);
+    };
+    render();document.body.appendChild(calendar);
+  };
+  document.addEventListener('click', event => {
+    if(calendar && !calendar.contains(event.target) && event.target!==dateButton)closeCalendar();
+  });
+  window.addEventListener('scroll',closeCalendar);
+  window.addEventListener('resize',closeCalendar);
+  window.updateReportDate = value => { if (dateButton) dateButton.textContent = value || ''; };
+  let data = config.data;
+  const read = path => path.split('.').reduce((v, k) => v === null || v === void 0 ? void 0 : v[k], data);
+  const set = (path, value) => {
+    const keys = path.split('.');
+    let target = data;
+    keys.slice(0, -1).forEach(key => target = target[key]);
+    target[keys[keys.length - 1]] = value;
+  };
+  const paint = () => document.querySelectorAll('[data-choice]').forEach(button => {
+    const value = read(button.dataset.path),
+      label = button.dataset.value;
+    const selected = button.dataset.multi === 'true' ? Array.isArray(value) && value.includes(label) : value === label;
+    button.setAttribute('aria-checked', String(selected));
+    button.querySelector('.box').textContent = selected ? '✓' : button.dataset.code;
+  });
+  document.querySelectorAll('[data-choice]').forEach(button => button.onclick = () => {
+    const path = button.dataset.path,
+      label = button.dataset.value,
+      value = read(path);
+    const next = button.dataset.multi === 'true' ? Array.isArray(value) && value.includes(label) ? value.filter(v => v !== label) : [...(Array.isArray(value) ? value : []), label] : value === label ? '' : label;
+    set(path, next);
+    paint();
+    post({
+      type: 'choice',
+      path,
+      value: next
+    });
+  });
+  let expandedMedia = false;
+  let currentMedia = [];
+  const mediaUrl = asset => {
+    const uri = asset.uri || '';
+    return /^(file:\/\/|content:\/\/|data:image\/)/i.test(uri) ? uri : '';
+  };
+  const openMedia = index => {
+    const asset = currentMedia[index];
+    if (!asset) return;
+    const viewer = document.createElement('div');
+    viewer.className = 'media-viewer';
+    viewer.setAttribute('role', 'dialog');
+    viewer.setAttribute('aria-label', 'Ek önizleme');
+    const video = (asset.type || '').startsWith('video');
+    const content = document.createElement(video ? 'video' : 'img');
+    content.src = mediaUrl(asset);
+    if (video) { content.controls = true; content.playsInline = true; }
+    else content.alt = 'Fotoğraf ' + (index + 1);
+    const close = document.createElement('button');
+    close.textContent = 'Kapat ×';
+    close.onclick = () => { if (video) content.pause(); viewer.remove(); };
+    const label = document.createElement('span');
+    label.textContent = (index + 1) + ' / ' + currentMedia.length;
+    viewer.appendChild(content); viewer.appendChild(close); viewer.appendChild(label);
+    document.body.appendChild(viewer);
+  };
+  const showMedia = media => {
+    currentMedia = media;
+    const list = document.getElementById('media-list');
+    if (!list) return;
+    list.textContent = '';
+    media.slice(0, expandedMedia ? 40 : 10).forEach((asset, i) => {
+      const tile = document.createElement('div');
+      tile.className = 'media-tile';
+      const open = document.createElement('button');
+      open.className = 'media-open';
+      open.setAttribute('aria-label', 'Eki aç ' + (i + 1));
+      const video = (asset.type || '').startsWith('video');
+      const thumbnail = document.createElement(video ? 'video' : 'img');
+      thumbnail.src = mediaUrl(asset) + (video ? '#t=0.1' : '');
+      if (video) { thumbnail.muted = true; thumbnail.preload = 'metadata'; thumbnail.playsInline = true; }
+      else { thumbnail.alt = 'Fotoğraf ' + (i + 1); thumbnail.loading = 'lazy'; }
+      open.appendChild(thumbnail);
+      open.onclick = () => openMedia(i);
+      tile.appendChild(open);
+      if (video) {
+        const badge = document.createElement('span'); badge.className = 'media-play'; badge.textContent = '▶'; tile.appendChild(badge);
+      }
+      if (config.editable) {
+        const remove = document.createElement('button');
+        remove.className = 'media-remove'; remove.textContent = '×';
+        remove.setAttribute('aria-label', 'Eki sil ' + (i + 1));
+        remove.onclick = () => post({type:'action', action:'remove-media', index:i});
+        tile.appendChild(remove);
+      }
+      list.appendChild(tile);
+    });
+    if (!expandedMedia && media.length > 10) {
+      const tile = document.createElement('div'); tile.className = 'media-tile';
+      const more = document.createElement('button'); more.className = 'media-more';
+      more.textContent = '+' + (media.length - 10);
+      more.setAttribute('aria-label', 'Diğer ekleri göster');
+      more.onclick = () => { expandedMedia = true; showMedia(currentMedia); };
+      tile.appendChild(more); list.appendChild(tile);
+    } else if (expandedMedia && media.length > 10) {
+      const less = document.createElement('button'); less.className = 'media-collapse'; less.textContent = 'Daha az göster';
+      less.onclick = () => { expandedMedia = false; showMedia(currentMedia); }; list.appendChild(less);
+    }
+    const count = document.getElementById('media-count');
+    if (count) count.textContent = media.length + ' / 40 ek';
+  };
+  window.updateReportMedia = showMedia;
+  showMedia(data.media || []);
+  document.querySelectorAll('[data-action]').forEach(button => button.onclick = () => {
+    var _document$querySelect;
+    return post({
+      type: 'action',
+      action: button.dataset.action,
+      recipient: ((_document$querySelect = document.querySelector('[data-field="recipient"]')) === null || _document$querySelect === void 0 ? void 0 : _document$querySelect.value) || ''
+    });
+  });
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') back.click();
+  });
+  paint();
+  post({
+    type: 'ready'
+  });
+});

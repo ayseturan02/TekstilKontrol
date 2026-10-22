@@ -1,0 +1,10 @@
+export const categories: string[];
+export const reasons: string[][];
+export const scopes: string[][];
+export const statuses: string[][];
+export const agreements: string[][];
+export const results: string[][];
+export const quantityRows: string[][];
+export function createInitial(): any;
+export function normalizeReport(input: any): any;
+export function htmlFor(input: any): string;

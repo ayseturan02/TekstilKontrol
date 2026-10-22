@@ -1,0 +1,8 @@
+{
+  "device": "5LXGJZT8AEQ44DL7",
+  "cases": {
+    "demo_login": "passed"
+  },
+  "restored": false,
+  "error": "FAILED: android_preserves_page_scale"
+}

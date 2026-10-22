@@ -32,6 +32,16 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
+	<key>NSCameraUsageDescription</key>
+	<string>Kontrol raporuna fotoğraf ve video eklemek için kamera erişimi kullanılır.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Kontrol videosu çekerken ses kaydı için mikrofon kullanılır.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Kontrol raporuna galeriden fotoğraf ve video seçmek için kullanılır.</string>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array><string>UIInterfaceOrientationPortrait</string></array>
+	<key>UIRequiresFullScreen</key>
+	<true/>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string></string>
 	<key>UILaunchStoryboardName</key>
@@ -43,8 +53,6 @@
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>

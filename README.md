@@ -1,97 +1,32 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# İnternet Tekstil Kontrol — React Native CLI
 
-# Getting Started
+Expo kullanılmaz. Android tablet için React Native CLI kaynak projesidir.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+## Windows kurulumu
+1. Node.js 20+, JDK 17, Android Studio ve Android SDK kurun.
+2. Bu klasörde `npm install` çalıştırın.
+3. **Android yerel proje iskeletini üretin:** Ayrı bir klasörde `npx @react-native-community/cli@latest init TekstilKontrol --version 0.79.5` çalıştırın. Oluşan `android` klasörünü bu projeye kopyalayın. Bu ZIP Android Gradle iskeletini içermediği için bu adım zorunludur.
+4. `src/report.ts` dosyasında API adresini düzenleyin: Android emülatör için `10.0.2.2`, fiziksel tablet için sunucu bilgisayarın LAN IP adresi.
+5. `server` klasöründe `npm install` yapın. `.env.example` dosyasını `.env` olarak kopyalayın.
+6. Parola hash'i üretin: `node -e "console.log(require('bcryptjs').hashSync('GUVENLI_SIFRE',12))"`; sonucu `.env` içindeki `USER_PASSWORD_HASH` alanına yazın.
+7. SMTP ayarlarını doldurun. `server` klasöründe `npm start` ile API'yi başlatın.
+8. Proje kökünde `npx react-native start`; ikinci terminalde `npx react-native run-android`.
 
-## Step 1: Start Metro
+## Önemli sınırlar
+- Bu sürüm tek önceden tanımlı kullanıcıyı destekler. Çoklu kullanıcı yönetimi için veritabanı gerekir.
+- Taslak cihazın AsyncStorage alanına kaydedilir; hassas raporlar için şifreli depolama ve sunucu senkronizasyonu eklenmelidir.
+- PDF önizleme/yazdırma cihazın yazdırma servisini açar. E-posta içeriği HTML rapordur, medya dosyaları eklenir; PDF ekinin otomatik üretilmesi henüz yoktur.
+- Büyük videolar SMTP boyut limitine takılabilir. Üretimde dosya depolama ve indirme bağlantısı önerilir.
+- Yerel HTTP sadece geliştirme içindir; gerçek kullanımda HTTPS zorunludur.
+- Müşteri ve atölye seçenekleri örnektir, gerçek kayıtlar daha sonra yönetim panelinden gelmelidir.
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+## Dikey dijital kontrol formu
 
-To start the Metro dev server, run the following command from the root of your React Native project:
-
-```sh
-# Using npm
-npm start
-
-# OR using Yarn
-yarn start
-```
-
-## Step 2: Build and run your app
-
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
-
-### Android
-
-```sh
-# Using npm
-npm run android
-
-# OR using Yarn
-yarn android
-```
-
-### iOS
-
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
-
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
-
-```sh
-bundle install
-```
-
-Then, and every time you update your native dependencies, run:
-
-```sh
-bundle exec pod install
-```
-
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
-
-```sh
-# Using npm
-npm run ios
-
-# OR using Yarn
-yarn ios
-```
-
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
-
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
-
-## Step 3: Modify your app
-
-Now that you have successfully run the app, let's make changes!
-
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
-
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
-
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
-
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+- Fotoğraf referansındaki çizgiler, hücre oranları ve başlık `shared/paperLayout.js` içinde vektör olarak tanımlanır. El yazıları şablonun parçası değildir; tarih dahil yeni formun tüm kullanıcı alanları boş başlar. Logo şekli vektör olarak yeniden çizilmiştir.
+- Alana dokununca kağıt o bölgeye yakınlaşır ve klavye açılır. Doğrudan formun üzerinde yazılır; ayrı bir pencere açılmaz. Kağıdın tamamı düğmesi genel görünüme döndürür.
+- Yazı ve tikler otomatik kaydedilir. Yeni form `paper-form-v2` depolama anahtarını kullanır; önceki deneme taslağı `draft` anahtarında korunur ve yeni forma otomatik taşınmaz.
+- Fotoğraf/video ekleri formun altında bulunur. En fazla 10 ek, ek başına 25 MB desteklenir. Önizlemede aynı form salt okunurdur.
+- Tablet yazdırması ve e-posta eki aynı vektör şablonunu kullanır. E-postaya `Kontrol-Raporu.html` ile medya dosyaları eklenir; otomatik PDF eki henüz yoktur. A4 dikey yazdırma ekranından PDF kaydedilebilir. E-posta uygulamaları HTML gövdesini farklı gösterebildiğinden asıl sabit yerleşim HTML ekindedir.
+- Tarayıcı davranışının düzenlenebilir kaynağı `shared/paperScript.source.js`, üretilen dosyası `shared/paperScript.js` dosyasıdır. `npm run build:paper` ile Android WebView 74 uyumlu kod üretilir. Hermes üzerinde fonksiyon.toString() kullanılmaz.
+- Paylaşılan Android Fabric TextLayoutManager hatasını önlemek için Android derlemesinde yeni mimari kapatılmıştır. WebView eklentisi nedeniyle Android yeniden derlenmelidir; iOS için pod kurulumu gerekir.
+- `npm run typecheck` ve `npm test` ile kontroller çalışır. Boş form çıktısı `artifacts/kontrol-raporu-bos.pdf` içindedir.
