@@ -18,6 +18,6 @@ const mergeEmails = (saved, added) => {
   return result.slice(0, MAX_SAVED_EMAILS);
 };
 const mailSubject = d => 'Kontrol Raporu - ' + (d.customer || 'Yeni');
-const mailBody = (d, mediaCount) => ['Merhaba,', '', 'Doldurulmuş kontrol raporu ekteki Kontrol-Raporu.html dosyasındadır.' + (mediaCount ? ' Ayrıca ' + mediaCount + ' fotoğraf/video eklidir.' : ''), '',
+const mailBody = (d, mediaCount) => ['Merhaba,', '', 'Doldurulmuş kontrol raporu ekteki Kontrol-Raporu.pdf dosyasındadır.' + (mediaCount ? ' Ayrıca ' + mediaCount + ' fotoğraf/video eklidir.' : ''), '',
   ...[['Müşteri', d.customer], ['Sipariş No', d.order], ['Artikel', d.article], ['Kontrol Tarihi', d.date], ['Rapor No', d.reportNo]].filter(([, value]) => String(value || '').trim()).map(([label, value]) => label + ': ' + String(value).trim())].join('\n').trim();
 module.exports = {defaultRecipients, normalizeEmail, isValidEmail, parseSavedEmails, mergeEmails, mailSubject, mailBody};

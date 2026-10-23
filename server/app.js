@@ -2,10 +2,10 @@ const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
 const nodemailer = require('nodemailer');
-const {htmlFor} = require('../shared/reportTemplate');
+const {renderReportPdf} = require('./pdf');
 const {ServiceError} = require('./errors');
 
-function createApp({recipientStore, env = process.env, createTransport = nodemailer.createTransport}) {
+function createApp({recipientStore, env = process.env, createTransport = nodemailer.createTransport, renderPdf = renderReportPdf}) {
   const app = express();
   app.use(cors());
   app.use(express.json({limit: '32kb'}));
@@ -18,11 +18,13 @@ function createApp({recipientStore, env = process.env, createTransport = nodemai
     try { d = JSON.parse(req.body.report); } catch { return res.status(400).json({error: 'Geçerli rapor gerekli.'}); }
     const recipients = String(d?.recipient || '').split(',').map(v => v.trim()).filter(Boolean);
     if (!recipients.length || recipients.some(v => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v))) return res.status(400).json({error: 'Geçerli alıcı e-postası gerekli'});
+    let pdf;
+    try {pdf = await renderPdf(d);}
+    catch {return res.status(500).json({error: 'PDF oluşturulamadı. Lütfen tekrar deneyin.'});}
     try {
       const transport = createTransport({host: env.SMTP_HOST, port: Number(env.SMTP_PORT || 587), secure: env.SMTP_SECURE === 'true', auth: {user: env.SMTP_USER, pass: env.SMTP_PASSWORD}});
-      const html = htmlFor(d);
-      await transport.sendMail({from: env.SMTP_FROM || env.SMTP_USER, to: recipients, subject: 'Kontrol Raporu - ' + (d.customer || 'Yeni'), html,
-        attachments: [{filename: 'Kontrol-Raporu.html', content: html, contentType: 'text/html; charset=utf-8'}, ...(req.files || []).map(f => ({filename: f.originalname, content: f.buffer, contentType: f.mimetype}))]});
+      await transport.sendMail({from: env.SMTP_FROM || env.SMTP_USER, to: recipients, subject: 'Kontrol Raporu - ' + (d.customer || 'Yeni'), text: 'Doldurulmuş kontrol raporu PDF olarak ektedir.',
+        attachments: [{filename: 'Kontrol-Raporu.pdf', content: pdf, contentType: 'application/pdf'}, ...(req.files || []).map(f => ({filename: f.originalname, content: f.buffer, contentType: f.mimetype}))]});
       res.json({ok: true});
     } catch { res.status(500).json({error: 'SMTP gönderimi başarısız. Sunucu ayarlarını kontrol edin.'}); }
   }));

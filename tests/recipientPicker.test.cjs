@@ -96,5 +96,5 @@ test('mail draft subject and body summarise the report',()=>{
  const report={...createInitial(),customer:'ACME',order:'42'};
  assert.equal(mailSubject(report),'Kontrol Raporu - ACME');
  const body=mailBody(report,2);
- assert.ok(body.includes('Kontrol-Raporu.html'));assert.ok(body.includes('2 fotoğraf/video'));assert.ok(body.includes('Sipariş No: 42'));
+ assert.ok(body.includes('Kontrol-Raporu.pdf'));assert.ok(body.includes('2 fotoğraf/video'));assert.ok(body.includes('Sipariş No: 42'));
 });

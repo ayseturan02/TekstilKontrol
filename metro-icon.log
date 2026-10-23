@@ -171,3 +171,11 @@ transform[stderr]: (Use `node --trace-warnings ...` to show where the warning wa
  INFO  Connection closed to device='Android SDK built for x86 - 10 - API 29' for app='com.tekstilkontrol' with code='1006' and reason=''.
  INFO  Connection established to app='com.tekstilkontrol' on device='Android SDK built for x86 - 10 - API 29'.
  BUNDLE  ./index.js 
+ BUNDLE  ./index.js ░░░░░░░░░░░░░░░░ 0.0% (0/1)
+ BUNDLE  ./index.js 
+ BUNDLE  ./index.js 
+ BUNDLE  ./index.js ░░░░░░░░░░░░░░░░ 0.0% (0/1)
+ BUNDLE  ./index.js 
+ INFO  Connection closed to device='Android SDK built for x86 - 10 - API 29' for app='com.tekstilkontrol' with code='1006' and reason=''.
+ INFO  Connection established to app='com.tekstilkontrol' on device='Android SDK built for x86 - 10 - API 29'.
+ BUNDLE  ./index.js 
