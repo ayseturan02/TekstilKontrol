@@ -2,7 +2,7 @@ import React, {createContext, useContext, useEffect, useRef, useState} from 'rea
 import {Alert} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {launchCamera, launchImageLibrary, Asset} from 'react-native-image-picker';
-import {API, createInitial, normalizeReport} from '../report';
+import {createInitial, normalizeReport} from '../report';
 function useAppState() {
   const [reportVersion,setReportVersion]=useState(0);
   const [d,setD]=useState<any>(createInitial);
@@ -15,7 +15,6 @@ function useAppState() {
   const ready=draftReady&&loadedKey===draftKey;
   const [draftStatus,setDraftStatus]=useState('');
   const storageQueue=useRef<Promise<any>>(Promise.resolve());
-  const sending=useRef(false);
   const clearing=useRef(false);
   const generation=useRef(0);
   const enqueue=(task:()=>Promise<any>)=>{
@@ -114,24 +113,7 @@ function useAppState() {
       setD((old:any)=>({...old,media:[...old.media,...assets].slice(0,40)}));
     }catch(e:any){Alert.alert('Medya eklenemedi',e.message||'Tekrar deneyin.');}
   };
-  const send=async(recipientOverride?:string)=>{
-    const report=typeof recipientOverride==='string'?{...d,recipient:recipientOverride}:d;
-    if(sending.current)return;
-    const recipients=report.recipient.split(',').map((v:string)=>v.trim()).filter(Boolean);
-    if(!recipients.length||recipients.some((v:string)=>!/^\S+@[^\s@]+\.[^\s@]+$/.test(v))){Alert.alert('Alıcı gerekli','Geçerli e-posta adreslerini virgülle ayırarak yazın.');return;}
-    sending.current=true;setBusy(true);
-    try{
-      const body=new FormData();body.append('report',JSON.stringify(report));
-      for(const a of d.media as Asset[])if(a.uri)body.append('files',{uri:a.uri,type:a.type||'application/octet-stream',name:a.fileName||'ek'} as any);
-      const r=await fetch(API+'/send',{method:'POST',body});
-      const j=await r.json();if(!r.ok)throw Error(j.error||'Gönderim başarısız');
-      // Keep the completed report on screen after sending, avoiding accidental loss.
-      await persist().catch(()=>{});
-      Alert.alert('Gönderildi','Doldurulmuş kontrol formu ve ekler e-posta ile gönderildi.');
-    }catch(e:any){Alert.alert('Gönderilemedi',e.message||'Bağlantıyı kontrol edip tekrar deneyin.');}
-    finally{sending.current=false;setBusy(false);}
-  };
-  return {reportVersion,d,set,setPath,busy,ready,draftStatus,save,persist,clearReport,addMedia,send};
+  return {reportVersion,d,set,setPath,busy,ready,draftStatus,save,persist,clearReport,addMedia};
 }
 const AppContext=createContext<ReturnType<typeof useAppState>|null>(null);
 export function AppProvider({children}:React.PropsWithChildren){return <AppContext.Provider value={useAppState()}>{children}</AppContext.Provider>;}

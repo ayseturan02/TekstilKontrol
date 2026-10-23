@@ -1,4 +1,4 @@
-// Shared by the tablet and the mail server: one printable portrait report.
+// Tekstil Kontrol: Tek sayfalık A4 dikey kontrol raporu şablonu.
 const categories = ['Tanımlama', 'Ölçü', 'Oturuş', 'Materyal', 'İşçilik', 'İşlev', 'Etiketlendirme', 'Paketleme'];
 const reasons = [['P', 'Ara Kontrol'], ['A', 'Son Kontrol'], ['F', 'Karşılıksız']];
 const scopes = [['N', 'Normal'], ['R', 'Azaltılmış'], ['V', 'Arttırılmış']];
