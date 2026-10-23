@@ -1,33 +1,37 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {Alert} from 'react-native';
 import RNPrint from 'react-native-print';
 import PaperReport from '../components/PaperReport';
 import {useApp} from '../context/AppContext';
-import {API, htmlFor} from '../report';
-import {apiRequest} from '../services/api';
-import {SavedRecipient} from '../../shared/recipients';
+import {htmlFor} from '../report';
+import {forgetEmail, loadSavedEmails, openMailDraft, parseRecipients, rememberEmails} from '../services/mail';
 export default function PreviewScreen(){
-  const {d,setPath,busy,send}=useApp();
-  const [recipients,setRecipients]=useState<SavedRecipient[]>([]);
-  const [recipientStatus,setRecipientStatus]=useState('');
-  const [recipientLoading,setRecipientLoading]=useState(true);
-  const [refresh,setRefresh]=useState(0);
+  const {d,setPath}=useApp();
+  const [recipients,setRecipients]=useState<string[]>([]);
+  const opening=useRef(false);
   useEffect(()=>{
     let active=true;
-    setRecipientLoading(true);setRecipientStatus('');
-    apiRequest(API,'/recipients').then(data=>{if(active)setRecipients(data.recipients);})
-      .catch(()=>{if(active){setRecipients([]);setRecipientStatus('Kayıtlı alıcılar yüklenemedi. Listeyi yenileyebilir veya Yeni e-posta ile devam edebilirsiniz.');}})
-      .finally(()=>{if(active)setRecipientLoading(false);});
+    loadSavedEmails().then(list=>{if(active)setRecipients(list);}).catch(()=>{});
     return ()=>{active=false;};
-  },[refresh]);
+  },[]);
   const action=async(name:string,detail:any)=>{
-    if(name==='reload-recipients'){setRefresh(value=>value+1);return;}
     if(name==='print')try{await RNPrint.print({html:htmlFor(d)});}catch(e:any){Alert.alert('Önizleme açılamadı',e.message||'Yazdırma servisini kontrol edin.');}
-    if(name==='send'&&!busy){
-      const value=String(detail.recipient||'').trim();
-      if(!value||value.split(',').some((email:string)=>!/^\S+@[^\s@]+\.[^\s@]+$/.test(email.trim()))){Alert.alert('Alıcı gerekli','Kayıtlı bir alıcı seçin veya geçerli bir e-posta yazın.');return;}
-      Alert.alert('Gönderimi onayla','Kontrol formu ve ekleri '+value+' adresine gönderilsin mi?',[{text:'Vazgeç',style:'cancel'},{text:'Gönder',onPress:()=>send(value)}]);
+    if(name==='forget-recipient'){
+      try{setRecipients(await forgetEmail(String(detail.email||'')));}catch{Alert.alert('Silinemedi','Adres telefondan silinemedi, tekrar deneyin.');}
+      return;
+    }
+    if(name==='send'){
+      if(opening.current)return;
+      const list=parseRecipients(detail.recipient);
+      if(!list.length){Alert.alert('Alıcı gerekli','En az bir geçerli e-posta adresi seçin.');return;}
+      opening.current=true;
+      try{
+        // Addresses are remembered first so they stay saved even if the mail app is cancelled.
+        try{setRecipients(await rememberEmails(list));}catch{}
+        await openMailDraft({...d,recipient:list.join(', ')},list);
+      }catch(e:any){Alert.alert('Mail uygulaması açılamadı',e?.message||'Telefonda bir e-posta uygulaması kurulu olduğundan emin olun.');}
+      finally{opening.current=false;}
     }
   };
-  return <PaperReport data={d} readOnly showSend recipients={recipients} recipientStatus={recipientStatus} recipientLoading={recipientLoading} onChange={setPath} onAction={action} />;
+  return <PaperReport data={d} readOnly showSend recipients={recipients} onChange={setPath} onAction={action} />;
 }
