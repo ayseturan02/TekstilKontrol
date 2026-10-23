@@ -1,7 +1,7 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const {randomUUID} = require('node:crypto');
-const {UserError} = require('./users');
+const {ServiceError} = require('./errors');
 const {defaultRecipients, isValidEmail, normalizeEmail} = require('../shared/recipients');
 function createRecipientStore(filename) {
   let recipients = [], queue = Promise.resolve();
@@ -30,10 +30,10 @@ function createRecipientStore(filename) {
     async create(input) {
       const email = normalizeEmail(input.email);
       const name = String(input.name || '').trim() || email;
-      if (!isValidEmail(email)) throw new UserError(400, 'Geçerli bir e-posta adresi girin.');
-      if (name.length > 120) throw new UserError(400, 'Kişi veya ekip adı en fazla 120 karakter olabilir.');
+      if (!isValidEmail(email)) throw new ServiceError(400, 'Geçerli bir e-posta adresi girin.');
+      if (name.length > 120) throw new ServiceError(400, 'Kişi veya ekip adı en fazla 120 karakter olabilir.');
       return serialize(async () => {
-        if (recipients.some(item => item.email === email)) throw new UserError(409, 'Bu e-posta adresi listede zaten var.');
+        if (recipients.some(item => item.email === email)) throw new ServiceError(409, 'Bu e-posta adresi listede zaten var.');
         const item = {id: randomUUID(), name, email, isExample: false, createdAt: new Date().toISOString()};
         await write([...recipients, item]);
         return {...item};
@@ -41,7 +41,7 @@ function createRecipientStore(filename) {
     },
     async remove(id) {
       return serialize(async () => {
-        if (!recipients.some(item => item.id === id)) throw new UserError(404, 'E-posta adresi bulunamadı.');
+        if (!recipients.some(item => item.id === id)) throw new ServiceError(404, 'E-posta adresi bulunamadı.');
         await write(recipients.filter(item => item.id !== id));
       });
     },

@@ -4,10 +4,10 @@ import RNPrint from 'react-native-print';
 import PaperReport from '../components/PaperReport';
 import {useApp} from '../context/AppContext';
 import {API, htmlFor} from '../report';
-import {apiRequest} from '../services/auth';
+import {apiRequest} from '../services/api';
 import {SavedRecipient} from '../../shared/recipients';
 export default function PreviewScreen(){
-  const {d,setPath,busy,send,token}=useApp();
+  const {d,setPath,busy,send}=useApp();
   const [recipients,setRecipients]=useState<SavedRecipient[]>([]);
   const [recipientStatus,setRecipientStatus]=useState('');
   const [recipientLoading,setRecipientLoading]=useState(true);
@@ -15,12 +15,11 @@ export default function PreviewScreen(){
   useEffect(()=>{
     let active=true;
     setRecipientLoading(true);setRecipientStatus('');
-    if(token==='demo-session'){setRecipients([]);setRecipientLoading(false);setRecipientStatus('Demo hesabında Yeni e-posta seçeneğini kullanabilirsiniz.');return;}
-    apiRequest(API,'/recipients',{token}).then(data=>{if(active)setRecipients(data.recipients);})
+    apiRequest(API,'/recipients').then(data=>{if(active)setRecipients(data.recipients);})
       .catch(()=>{if(active){setRecipients([]);setRecipientStatus('Kayıtlı alıcılar yüklenemedi. Listeyi yenileyebilir veya Yeni e-posta ile devam edebilirsiniz.');}})
       .finally(()=>{if(active)setRecipientLoading(false);});
     return ()=>{active=false;};
-  },[token,refresh]);
+  },[refresh]);
   const action=async(name:string,detail:any)=>{
     if(name==='reload-recipients'){setRefresh(value=>value+1);return;}
     if(name==='print')try{await RNPrint.print({html:htmlFor(d)});}catch(e:any){Alert.alert('Önizleme açılamadı',e.message||'Yazdırma servisini kontrol edin.');}

@@ -20,22 +20,10 @@ function harness(role) {
   }});
   return {Component: module.exports.default, state};
 }
-test('admin sees real name and Settings in profile and can open user management', async () => {
-  const {Component} = harness('admin'); let root;
-  await Renderer.act(async () => {root = Renderer.create(React.createElement(Component));});
-  const settings = root.root.findAll(node => node.type === 'TouchableOpacity' && node.props.accessibilityLabel === 'Ayarlar');
-  assert.equal(settings.length, 1);
-  assert.ok(root.root.findAllByType('Text').some(node => node.props.children === 'Ayşe Yılmaz'));
-  await Renderer.act(async () => settings[0].props.onPress());
-  assert.equal(root.root.findAllByType('SettingsScreen').length, 1);
-  assert.equal(root.root.findAll(node => node.type === 'Button' && node.props.title === 'Kaydet').length, 0);
-  await Renderer.act(async () => root.unmount());
+test('splash leads directly to the form without login or profile actions',async()=>{
+ const {Component,state}=harness();delete state.token;delete state.user;delete state.sessionReady;let root;
+ await Renderer.act(async()=>{root=Renderer.create(React.createElement(Component));});
+ assert.equal(root.root.findAllByType('ReportFormScreen').length,1);
+ for(const type of ['LoginScreen','SettingsScreen','TouchableOpacity','Modal'])assert.equal(root.root.findAllByType(type).length,0);
+ await Renderer.act(async()=>root.unmount());
 });
-test('ordinary account and demo profile have no Settings entry', async () => {
-  const {Component} = harness('user'); let root;
-  await Renderer.act(async () => {root = Renderer.create(React.createElement(Component));});
-  assert.equal(root.root.findAll(node => node.props.accessibilityLabel === 'Ayarlar').length, 0);
-  assert.equal(root.root.findAllByType('SettingsScreen').length, 0);
-  await Renderer.act(async () => root.unmount());
-});
-

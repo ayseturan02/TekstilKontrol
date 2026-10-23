@@ -5,8 +5,8 @@ const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 function adb(args) {const r = cp.spawnSync('adb', args, {encoding: 'utf8', timeout: 20000}); if (r.status !== 0) throw Error('ADB işlemi başarısız'); return r.stdout;}
 function decode(value) {return value.replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');}
 function ui() {
-  adb(['shell', 'uiautomator', 'dump', '/sdcard/admin-ui.xml']);
-  const xml = adb(['shell', 'cat', '/sdcard/admin-ui.xml']);
+  adb(['shell', 'uiautomator', 'dump', '/sdcard/report-ui.xml']);
+  const xml = adb(['shell', 'cat', '/sdcard/report-ui.xml']);
   return (xml.match(/<node\b[^>]*>/g) || []).map(raw => Object.fromEntries([...raw.matchAll(/([\w:-]+)="([^"]*)"/g)].map(m => [m[1], decode(m[2])])));
 }
 function tapNode(node) {
@@ -61,7 +61,7 @@ async function connectReport() {
  let report,original,contacts=[],override;
  const size=adb(['shell','wm','size']);const match=size.match(/Override size: (\d+x\d+)/);override=match?match[1]:'reset';
  try{
-  await waitFor('Profili aç');if(ui().some(n=>n['content-desc']==='Önizle →'))await tap('Önizle →');
+  await waitFor('Kaydet');if(ui().some(n=>n['content-desc']==='Önizle →'))await tap('Önizle →');
   report=await connectReport();
   for(let i=0;i<30;i++){if(await report.evaluate('!!document.getElementById("recipient-choice")'))break;await pause(150);}
   original=await report.evaluate('document.getElementById("recipient").value');

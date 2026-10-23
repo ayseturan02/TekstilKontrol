@@ -5,8 +5,8 @@ const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 function adb(args) {const r = cp.spawnSync('adb', args, {encoding: 'utf8', timeout: 20000}); if (r.status !== 0) throw Error('ADB işlemi başarısız'); return r.stdout;}
 function decode(value) {return value.replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');}
 function ui() {
-  adb(['shell', 'uiautomator', 'dump', '/sdcard/admin-ui.xml']);
-  const xml = adb(['shell', 'cat', '/sdcard/admin-ui.xml']);
+  adb(['shell', 'uiautomator', 'dump', '/sdcard/report-ui.xml']);
+  const xml = adb(['shell', 'cat', '/sdcard/report-ui.xml']);
   return (xml.match(/<node\b[^>]*>/g) || []).map(raw => Object.fromEntries([...raw.matchAll(/([\w:-]+)="([^"]*)"/g)].map(m => [m[1], decode(m[2])])));
 }
 function tapNode(node) {
@@ -58,7 +58,7 @@ async function connectReport() {
   };
 }
 (async()=>{
-  await waitFor('Profili aç');
+  await waitFor('Kaydet');
   const nodes=ui();
   if(nodes.some(n=>n['content-desc']==='Önizle →'))await tap('Önizle →');
   const report=await connectReport();

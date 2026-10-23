@@ -156,3 +156,18 @@ transform[stderr]: (Use `node --trace-warnings ...` to show where the warning wa
  BUNDLE  ./index.js 
  BUNDLE  ./index.js ░░░░░░░░░░░░░░░░ 0.0% (0/1)
  BUNDLE  ./index.js 
+ INFO  Connection closed to device='Android SDK built for x86 - 10 - API 29' for app='com.tekstilkontrol' with code='1006' and reason=''.
+ INFO  Connection established to app='com.tekstilkontrol' on device='2412DPC0AG - 16 - API 36'.
+ BUNDLE  ./index.js 
+ INFO  Connection established to app='com.tekstilkontrol' on device='Android SDK built for x86 - 10 - API 29'.
+ BUNDLE  ./index.js 
+ INFO  Connection closed to device='2412DPC0AG - 16 - API 36' for app='com.tekstilkontrol' with code='1006' and reason=''.
+ INFO  Connection closed to device='Android SDK built for x86 - 10 - API 29' for app='com.tekstilkontrol' with code='1006' and reason=''.
+ INFO  Connection established to app='com.tekstilkontrol' on device='Android SDK built for x86 - 10 - API 29'.
+ BUNDLE  ./index.js 
+ INFO  Connection closed to device='Android SDK built for x86 - 10 - API 29' for app='com.tekstilkontrol' with code='1006' and reason=''.
+ INFO  Connection established to app='com.tekstilkontrol' on device='Android SDK built for x86 - 10 - API 29'.
+ BUNDLE  ./index.js 
+ INFO  Connection closed to device='Android SDK built for x86 - 10 - API 29' for app='com.tekstilkontrol' with code='1006' and reason=''.
+ INFO  Connection established to app='com.tekstilkontrol' on device='Android SDK built for x86 - 10 - API 29'.
+ BUNDLE  ./index.js 

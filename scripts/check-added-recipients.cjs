@@ -5,8 +5,8 @@ const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 function adb(args) {const r = cp.spawnSync('adb', args, {encoding: 'utf8', timeout: 20000}); if (r.status !== 0) throw Error('ADB işlemi başarısız'); return r.stdout;}
 function decode(value) {return value.replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');}
 function ui() {
-  adb(['shell', 'uiautomator', 'dump', '/sdcard/admin-ui.xml']);
-  const xml = adb(['shell', 'cat', '/sdcard/admin-ui.xml']);
+  adb(['shell', 'uiautomator', 'dump', '/sdcard/report-ui.xml']);
+  const xml = adb(['shell', 'cat', '/sdcard/report-ui.xml']);
   return (xml.match(/<node\b[^>]*>/g) || []).map(raw => Object.fromEntries([...raw.matchAll(/([\w:-]+)="([^"]*)"/g)].map(m => [m[1], decode(m[2])])));
 }
 function tapNode(node) {
@@ -60,7 +60,7 @@ async function connectReport() {
 (async()=>{
  let report;
  try{
-  await waitFor('Profili a\u00e7');if(ui().some(n=>n['content-desc']==='\u00d6nizle \u2192'))await tap('\u00d6nizle \u2192');
+  await waitFor('Kaydet');if(ui().some(n=>/Profili|Giri\u015f yap|\u00c7\u0131k\u0131\u015f yap|Ayarlar/.test(n['content-desc']||n.text||'')))throw Error('Account UI should not exist');if(ui().some(n=>n['content-desc']==='\u00d6nizle \u2192'))await tap('\u00d6nizle \u2192');
   report=await connectReport();
   await report.evaluate('document.getElementById("recipient-choice").click();true;');
   const result=await report.evaluate('(function(){var input=document.querySelector(".recipient-dialog-custom-input"),add=document.querySelector(".recipient-add");if(!add)throw Error("Missing add button");input.value="kontrol-test@example.com";add.click();input.value="ikinci-test@example.com";add.click();var rows=Array.from(document.querySelectorAll("[data-recipient-choice]"));return rows.filter(function(e){return /test@example.com$/.test(e.dataset.recipientChoice)&&e.getAttribute("aria-checked")==="true";}).length===2&&!document.querySelector("[data-recipient-choice=__other__]");})()');

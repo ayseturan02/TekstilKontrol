@@ -27,18 +27,15 @@ test('portrait output preserves all eight categories, marks choices and escapes 
 });
 test('mail body and printable HTML attachment use the same report and preserve media',async t=>{
   const {createApp}=require('../server/app');
-  const serverRequire=require('node:module').createRequire(require.resolve('../server/app'));
-  const secret='mail-test-secret-at-least-32-characters';
-  const token=serverRequire('jsonwebtoken').sign({version:0},secret,{subject:'test-user',expiresIn:'1h'});
   let sent;
-  const app=createApp({secret,store:{findById:id=>id==='test-user'?{id,role:'user',authVersion:0}:null},createTransport:()=>({sendMail:async message=>{sent=message;}})});
+  const app=createApp({createTransport:()=>({sendMail:async message=>{sent=message;}})});
   const server=await new Promise(resolve=>{const listener=app.listen(0,'127.0.0.1',()=>resolve(listener));});
   t.after(()=>new Promise(resolve=>server.close(resolve)));
   const endpoint='http://127.0.0.1:'+server.address().port+'/send';
   const d=template.createInitial();d.customer='Customer';d.recipient='recipient@example.com';
   const form=new FormData();form.append('report',JSON.stringify(d));form.append('files',new Blob(['image'],{type:'image/jpeg'}),'photo.jpg');
-  const response=await fetch(endpoint,{method:'POST',headers:{Authorization:'Bearer '+token},body:form});
+  const response=await fetch(endpoint,{method:'POST',body:form});
   assert.equal(response.status,200);assert.equal(sent.html,template.htmlFor(d));assert.equal(sent.attachments[0].content,sent.html);assert.equal(sent.attachments[1].filename,'photo.jpg');
   sent=null;d.recipient='recipient@example.com,invalid';const bad=new FormData();bad.append('report',JSON.stringify(d));
-  assert.equal((await fetch(endpoint,{method:'POST',headers:{Authorization:'Bearer '+token},body:bad})).status,400);assert.equal(sent,null);
+  assert.equal((await fetch(endpoint,{method:'POST',body:bad})).status,400);assert.equal(sent,null);
 });
