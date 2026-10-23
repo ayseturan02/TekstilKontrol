@@ -1,0 +1,97 @@
+
+> TekstilKontrol@1.0.0 prestart
+> npm run build:paper
+
+
+> TekstilKontrol@1.0.0 build:paper
+> node scripts/buildPaperScript.cjs
+
+
+> TekstilKontrol@1.0.0 start
+> react-native start --reset-cache
+
+
+Welcome to React Native v0.79
+Starting dev server on http://localhost:8081
+
+
+                        ▒▒▓▓▓▓▒▒
+                     ▒▓▓▓▒▒░░▒▒▓▓▓▒
+                  ▒▓▓▓▓░░░▒▒▒▒░░░▓▓▓▓▒
+                 ▓▓▒▒▒▓▓▓▓▓▓▓▓▓▓▓▓▒▒▒▓▓
+                 ▓▓░░░░░▒▓▓▓▓▓▓▒░░░░░▓▓
+                 ▓▓░░▓▓▒░░░▒▒░░░▒▓▒░░▓▓
+                 ▓▓░░▓▓▓▓▓▒▒▒▒▓▓▓▓▒░░▓▓
+                 ▓▓░░▓▓▓▓▓▓▓▓▓▓▓▓▓▒░░▓▓
+                 ▓▓▒░░▒▒▓▓▓▓▓▓▓▓▒░░░▒▓▓
+                  ▒▓▓▓▒░░░▒▓▓▒░░░▒▓▓▓▒
+                     ▒▓▓▓▒░░░░▒▓▓▓▒
+                        ▒▒▓▓▓▓▒▒
+
+
+ WARN  the transform cache was reset.
+                Welcome to Metro v0.82.5
+              Fast - Scalable - Integrated
+
+
+ INFO  Dev server ready. Press Ctrl+C to exit.
+ INFO  Interactive mode is not supported in this environment
+ INFO  Connection established to app='com.tekstilkontrol' on device='Android SDK built for x86 - 10 - API 29'.
+ BUNDLE  ./index.js ░░░░░░░░░░░░░░░░ 0.0% (0/1)
+transform[stderr]: (node:18908) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+ BUNDLE  ./index.js ░░░░░░░░░░░░░░░░ 0.0% (0/1)
+transform[stderr]: (Use `node --trace-warnings ...` to show where the warning was created)
+transform[stderr]: (node:26496) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+transform[stderr]: (Use `node --trace-warnings ...` to show where the warning was created)
+transform[stderr]: (node:17180) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+transform[stderr]: (Use `node --trace-warnings ...` to show where the warning was created)
+transform[stderr]: (node:23956) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+transform[stderr]: (Use `node --trace-warnings ...` to show where the warning was created)
+transform[stderr]: (node:27364) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+transform[stderr]: (Use `node --trace-warnings ...` to show where the warning was created)
+transform[stderr]: (node:26840) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+transform[stderr]: (Use `node --trace-warnings ...` to show where the warning was created)
+transform[stderr]: (node:21748) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+transform[stderr]: (Use `node --trace-warnings ...` to show where the warning was created)
+transform[stderr]: (node:15144) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+transform[stderr]: (Use `node --trace-warnings ...` to show where the warning was created)
+transform[stderr]: (node:15380) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+transform[stderr]: (Use `node --trace-warnings ...` to show where the warning was created)
+transform[stderr]: (node:5212) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+transform[stderr]: (Use `node --trace-warnings ...` to show where the warning was created)
+ BUNDLE  ./index.js ▓▓▓▓░░░░░░░░░░░░ 25.0% (66/211)
+ BUNDLE  ./index.js ▓▓▓▓▓▓▓▓▓▓░░░░░░ 63.3% (347/436)
+ BUNDLE  ./index.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░ 93.3% (586/622)
+ BUNDLE  ./index.js 
+ INFO  
+[7m [1m💡 JavaScript logs have moved![22m They can now be viewed in React Native DevTools. Tip: Type [1mj[22m in the terminal to open (requires Google Chrome or Microsoft Edge).[27m
+
+ INFO  Connection closed to device='Android SDK built for x86 - 10 - API 29' for app='com.tekstilkontrol' with code='1006' and reason=''.
+ INFO  Connection established to app='com.tekstilkontrol' on device='Android SDK built for x86 - 10 - API 29'.
+ BUNDLE  ./index.js 
+ INFO  Connection closed to device='Android SDK built for x86 - 10 - API 29' for app='com.tekstilkontrol' with code='1006' and reason=''.
+ INFO  Connection established to app='com.tekstilkontrol' on device='Android SDK built for x86 - 10 - API 29'.
+ BUNDLE  ./index.js 
+ BUNDLE  ./index.js ░░░░░░░░░░░░░░░░ 0.0% (0/1)
+ BUNDLE  ./index.js 
+ BUNDLE  ./index.js 
+ BUNDLE  ./index.js ░░░░░░░░░░░░░░░░ 0.0% (0/1)
+ BUNDLE  ./index.js 
+ BUNDLE  ./index.js ░░░░░░░░░░░░░░░░ 0.0% (0/1)
+ BUNDLE  ./index.js 
+ BUNDLE  ./index.js ░░░░░░░░░░░░░░░░ 0.0% (0/1)
+ BUNDLE  ./index.js 
+ INFO  Connection closed to device='Android SDK built for x86 - 10 - API 29' for app='com.tekstilkontrol' with code='1006' and reason=''.
+ INFO  Connection established to app='com.tekstilkontrol' on device='Android SDK built for x86 - 10 - API 29'.
+ BUNDLE  ./index.js 
+ BUNDLE  ./index.js ░░░░░░░░░░░░░░░░ 0.0% (0/1)
+ BUNDLE  ./index.js 
+ INFO  Connection closed to device='Android SDK built for x86 - 10 - API 29' for app='com.tekstilkontrol' with code='1006' and reason=''.
+ INFO  Connection established to app='com.tekstilkontrol' on device='Android SDK built for x86 - 10 - API 29'.
+ BUNDLE  ./index.js 
+ INFO  Connection closed to device='Android SDK built for x86 - 10 - API 29' for app='com.tekstilkontrol' with code='1006' and reason=''.
+ INFO  Connection established to app='com.tekstilkontrol' on device='Android SDK built for x86 - 10 - API 29'.
+ BUNDLE  ./index.js 
+ INFO  Connection closed to device='Android SDK built for x86 - 10 - API 29' for app='com.tekstilkontrol' with code='1006' and reason=''.
+ INFO  Connection established to app='com.tekstilkontrol' on device='Android SDK built for x86 - 10 - API 29'.
+ BUNDLE  ./index.js 

@@ -36,9 +36,12 @@ export default function PaperReport({data,readOnly=false,showSend=false,onChange
   useEffect(()=>{syncDate();},[data.date]);
   const syncLayout=()=>web.current?.injectJavaScript('window.updatePaperLayout && window.updatePaperLayout('+JSON.stringify(layoutForReport(data))+');true;');
   useEffect(()=>{syncLayout();},[data]);
+  const syncSignatures=()=>web.current?.injectJavaScript('window.updateReportSignatures && window.updateReportSignatures('+JSON.stringify({manufacturerSignature:data.manufacturerSignature||'',controllerSignature:data.controllerSignature||''})+');true;');
+  useEffect(()=>{syncSignatures();},[data.manufacturerSignature,data.controllerSignature]);
   const message=(event:WebViewMessageEvent)=>{
     let payload:any;try{payload=JSON.parse(event.nativeEvent.data);}catch{return;}
-    if(payload.type==='ready'){syncMedia();syncLayout();syncDate();return;}
+    if(payload.type==='ready'){syncMedia();syncLayout();syncDate();syncSignatures();return;}
+    if(payload.type==='signature'&&!readOnly&&['manufacturerSignature','controllerSignature'].includes(payload.path)&&typeof payload.value==='string'&&payload.value.length<=300000&&(payload.value===''||/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(payload.value))){onChange?.(payload.path,payload.value);return;}
     if(payload.type==='field'&&typeof payload.value==='string'&&payload.value.length<=4000){
       if((!readOnly&&textPaths.has(payload.path))||(showSend&&payload.path==='recipient'))onChange?.(payload.path,payload.value);
     }

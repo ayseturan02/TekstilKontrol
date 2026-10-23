@@ -69,3 +69,18 @@ test('date field opens a calendar, selection updates date and preview cannot ope
  assert.equal(datePickerOptions,undefined);
  await Renderer.act(async()=>root.unmount());
 });
+
+test('signature bridge accepts only supported signers and PNG data while editing',async()=>{
+ const changes=[];let root;
+ const onChange=(path,value)=>changes.push({path,value});
+ await Renderer.act(async()=>{root=Renderer.create(React.createElement(PaperReport,{data:template.createInitial(),onChange}));});
+ const send=async payload=>{await Renderer.act(async()=>root.root.findByType('WebView').props.onMessage({nativeEvent:{data:JSON.stringify({type:'signature',...payload})}}));};
+ const png='data:image/png;base64,iVBORw0KGgo=';
+ for(const payload of [{path:'__proto__.polluted',value:png},{path:'manufacturerSignature',value:'https://example.com/sign.png'},{path:'controllerSignature',value:'data:image/svg+xml;base64,AAAA'},{path:'controllerSignature',value:'data:image/png;base64,'+'A'.repeat(300001)}])await send(payload);
+ assert.equal(changes.length,0);
+ await send({path:'manufacturerSignature',value:png});await send({path:'controllerSignature',value:''});
+ assert.deepEqual(changes,[{path:'manufacturerSignature',value:png},{path:'controllerSignature',value:''}]);
+ await Renderer.act(async()=>root.update(React.createElement(PaperReport,{data:template.createInitial(),readOnly:true,onChange})));
+ await send({path:'manufacturerSignature',value:png});assert.equal(changes.length,2);
+ await Renderer.act(async()=>root.unmount());
+});

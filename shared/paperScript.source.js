@@ -49,6 +49,10 @@
     next.texts.forEach((text, i) => labels[i].setAttribute('y', String(text.y)));
     const choices = canvas.querySelectorAll('[data-choice-index]');
     next.choices.forEach((choice, i) => choices[i].style.top = choice.y + 'px');
+    canvas.querySelectorAll('[data-signature]').forEach(slot=>{
+      const field=next.fields.find(f=>f.path===slot.dataset.signature);
+      if(field)slot.style.top=(field.y+field.h+8)+'px';
+    });
     scale(zoom);
   };
   fitPage();
@@ -147,6 +151,65 @@
   window.addEventListener('resize',closeCalendar);
   window.updateReportDate = value => { if (dateButton) dateButton.textContent = value || ''; };
   let data = config.data;
+  let signatureDialog=null;
+  const validSignature=value=>typeof value==='string'&&value.length<=300000&&(/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(value)||value==='');
+  const paintSignature=(role,value)=>{
+    const slot=document.querySelector('[data-signature="'+role+'"]');
+    if(!slot)return;
+    slot.textContent='';
+    if(value){const image=document.createElement('img');image.src=value;image.alt=(role==='manufacturer'?'İmalatçı':'Kontrolcü')+' imzası';slot.appendChild(image);}
+    else if(config.editable)slot.textContent='İmza ekle';
+  };
+  window.updateReportSignatures=values=>['manufacturer','controller'].forEach(role=>{
+    const value=values[role+'Signature']||'';
+    if(validSignature(value)){data[role+'Signature']=value;paintSignature(role,value);}
+  });
+  document.querySelectorAll('[data-signature]').forEach(slot=>{
+    if(!config.editable)return;
+    slot.onclick=()=>{
+      if(signatureDialog)return;
+      if(document.activeElement)document.activeElement.blur();
+      const role=slot.dataset.signature,key=role+'Signature';
+      const overlay=document.createElement('div');overlay.className='signature-overlay';signatureDialog=overlay;
+      overlay.setAttribute('role','dialog');overlay.setAttribute('aria-modal','true');
+      overlay.setAttribute('aria-label',(role==='manufacturer'?'İmalatçı':'Kontrolcü')+' imzası');
+      const panel=document.createElement('div');panel.className='signature-panel';
+      panel.innerHTML='<h2>'+(role==='manufacturer'?'İmalatçı':'Kontrolcü')+' imzası</h2><p>Parmağınızla veya kalemle aşağıya imza atın.</p><canvas class="signature-pad" width="1000" height="420" aria-label="İmza çizim alanı"></canvas><p class="signature-error" role="alert"></p><div class="signature-actions"><button type="button" data-signature-command="clear">Temizle</button><button type="button" data-signature-command="cancel">Vazgeç</button><button type="button" class="signature-save" data-signature-command="save">Kaydet</button></div>';
+      overlay.appendChild(panel);document.body.appendChild(overlay);
+      // Android WebView can pan the visual viewport independently of the layout viewport.
+      const viewport=window.visualViewport;
+      const positionDialog=()=>{
+        if(!viewport)return;
+        overlay.style.left=viewport.offsetLeft+'px';overlay.style.top=viewport.offsetTop+'px';
+        overlay.style.width=viewport.width+'px';overlay.style.height=viewport.height+'px';
+        overlay.style.right='auto';overlay.style.bottom='auto';
+      };
+      positionDialog();
+      if(viewport){viewport.addEventListener('resize',positionDialog);viewport.addEventListener('scroll',positionDialog);}
+      const pad=panel.querySelector('canvas'),ctx=pad.getContext('2d'),error=panel.querySelector('.signature-error');
+      const previousOverflow=document.body.style.overflow;document.body.style.overflow='hidden';
+      let ink=false,drawing=false,changed=false,pointer=null,loading=!!data[key];
+      const close=()=>{if(viewport){viewport.removeEventListener('resize',positionDialog);viewport.removeEventListener('scroll',positionDialog);}document.body.style.overflow=previousOverflow;overlay.remove();signatureDialog=null;slot.focus();};
+      overlay.closeSignature=close;
+      ctx.strokeStyle='#000';ctx.fillStyle='#000';ctx.lineWidth=3;ctx.lineCap='round';ctx.lineJoin='round';
+      if(data[key]){const image=new Image();image.onload=()=>{if(!changed){ctx.drawImage(image,0,0,pad.width,pad.height);ink=true;}loading=false;};image.onerror=()=>{loading=false;};image.src=data[key];}
+      const point=event=>{const rect=pad.getBoundingClientRect();return {x:(event.clientX-rect.left)*pad.width/rect.width,y:(event.clientY-rect.top)*pad.height/rect.height};};
+      pad.onpointerdown=event=>{if(loading||drawing)return;event.preventDefault();pointer=event.pointerId;pad.setPointerCapture(pointer);drawing=true;changed=true;ink=true;error.textContent='';const p=point(event);ctx.beginPath();ctx.arc(p.x,p.y,1.5,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.moveTo(p.x,p.y);};
+      pad.onpointermove=event=>{if(!drawing||event.pointerId!==pointer)return;event.preventDefault();const p=point(event);ctx.lineTo(p.x,p.y);ctx.stroke();};
+      const stop=event=>{if(event.pointerId===pointer){drawing=false;pointer=null;}};
+      pad.onpointerup=stop;pad.onpointercancel=stop;
+      panel.querySelector('[data-signature-command="clear"]').onclick=()=>{ctx.clearRect(0,0,pad.width,pad.height);ink=false;changed=true;loading=false;error.textContent='';};
+      panel.querySelector('[data-signature-command="cancel"]').onclick=close;
+      panel.querySelector('[data-signature-command="save"]').onclick=()=>{
+        if(loading||drawing)return;
+        if(!ink&&!data[key]){error.textContent='Lütfen önce imzanızı atın.';return;}
+        const value=ink?pad.toDataURL('image/png'):'';
+        if(!validSignature(value)){error.textContent='İmza kaydedilemedi. Temizleyip yeniden deneyin.';return;}
+        data[key]=value;paintSignature(role,value);post({type:'signature',path:key,value});close();
+      };
+      panel.querySelector('[data-signature-command="cancel"]').focus();
+    };
+  });
   const read = path => path.split('.').reduce((v, k) => v === null || v === void 0 ? void 0 : v[k], data);
   const set = (path, value) => {
     const keys = path.split('.');
@@ -256,7 +319,7 @@
     });
   });
   document.addEventListener('keydown', event => {
-    if (event.key === 'Escape') back.click();
+    if (event.key === 'Escape') {if(signatureDialog){signatureDialog.closeSignature();return;}back.click();}
   });
   paint();
   post({

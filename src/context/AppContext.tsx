@@ -7,6 +7,7 @@ import {authenticate} from '../services/auth';
 function useAppState() {
   const [reportVersion,setReportVersion]=useState(0);
   const [token,setToken]=useState('');
+  const [sessionReady,setSessionReady]=useState(false);
   const [email,setEmail]=useState('');
   const [password,setPassword]=useState('');
   const [loginError,setLoginError]=useState('');
@@ -24,6 +25,10 @@ function useAppState() {
   };
   useEffect(()=>{
     let active=true;
+    AsyncStorage.getItem('saved-session-v1').then(value=>{
+      if(!active||!value)return;
+      try{const session=JSON.parse(value);if(typeof session.token==='string'&&session.token){setToken(session.token);if(typeof session.email==='string')setEmail(session.email);}}catch{}
+    }).catch(()=>{}).finally(()=>{if(active)setSessionReady(true);});
     AsyncStorage.getItem('paper-form-v2').then(value=>{
       if(!active)return;
       if(value) { try {setD(normalizeReport(JSON.parse(value)));} catch {setDraftStatus('Taslak okunamadı');} }
@@ -67,7 +72,8 @@ function useAppState() {
     setLoginError('');setBusy(true);
     try{
       const session=await authenticate(email,password,{api:API});
-      setToken(session);
+      await AsyncStorage.setItem('saved-session-v1',JSON.stringify({token:session,email:email.trim().toLowerCase()}));
+      setToken(session);setPassword('');
     }catch(e:any){setLoginError(e.message||'Giriş yapılamadı. Bağlantınızı kontrol edip tekrar deneyin.');}
     finally{loggingIn.current=false;setBusy(false);}
   };
@@ -101,8 +107,8 @@ function useAppState() {
     }catch(e:any){Alert.alert('Gönderilemedi',e.message||'Bağlantıyı kontrol edip tekrar deneyin.');}
     finally{sending.current=false;setBusy(false);}
   };
-  const logout=async()=>{try{if(ready)await persist();setToken('');setPassword('');}catch{Alert.alert('Kaydedilemedi','Çıkıştan önce formu kaydetmek için tekrar deneyin.');}};
-  return {reportVersion,token,email,setEmail:(value:string)=>{setEmail(value);setLoginError('');},password,setPassword:(value:string)=>{setPassword(value);setLoginError('');},loginError,d,set,setPath,busy,ready,draftStatus,save,persist,login,logout,addMedia,send};
+  const logout=async()=>{try{if(ready)await persist();await AsyncStorage.removeItem('saved-session-v1');setToken('');setPassword('');}catch{Alert.alert('Kaydedilemedi','Çıkıştan önce formu kaydetmek için tekrar deneyin.');}};
+  return {reportVersion,sessionReady,token,email,setEmail:(value:string)=>{setEmail(value);setLoginError('');},password,setPassword:(value:string)=>{setPassword(value);setLoginError('');},loginError,d,set,setPath,busy,ready,draftStatus,save,persist,login,logout,addMedia,send};
 }
 const AppContext=createContext<ReturnType<typeof useAppState>|null>(null);
 export function AppProvider({children}:React.PropsWithChildren){return <AppContext.Provider value={useAppState()}>{children}</AppContext.Provider>;}

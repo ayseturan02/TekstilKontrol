@@ -7,12 +7,13 @@ const agreements = [['V', 'Etiketlendirme/Paketleme tekrar elden geçmeli'], ['A
 const results = [['F', 'Onay'], ['S', 'Stop'], ['O', 'Kontrolsüz Onay']];
 const quantityRows = [['shipment', 'Sevk Adedi N'], ['sample', 'Kontrol Adedi (n)'], ['accepted', 'Kabul Edilen Hata (c)'], ['defective', 'Hatalı Mal Birimi (i)']];
 function createInitial() {
-  return {date: '', reportNo: '', controlExtra1: '', controlExtra2: '', colorCount: '', documentsNote: '', bodyNote: '', laboratoryNote: '', office: '', workshop: '', customer: '', department: '', article: '', order: '', reason: '', scope: '', aql: '', stage: '', color: '', shipment: '', sample: '', accepted: '', defective: '', documents: '', body: '', laboratory: '', result: '', agreement: [], notes: '', recipient: '', manufacturer: '', codeNo: '', controller: '', qcManager: '', sizes: ['', '', '', '', ''], quantities: Object.fromEntries(quantityRows.map(([key]) => [key, ['', '', '', '', '']])), checks: Object.fromEntries(categories.map(c => [c, {status: '', note: '', code: '', count: ''}])), media: []};
+  return {date: '', reportNo: '', controlExtra1: '', controlExtra2: '', colorCount: '', documentsNote: '', bodyNote: '', laboratoryNote: '', office: '', workshop: '', customer: '', department: '', article: '', order: '', reason: '', scope: '', aql: '', stage: '', color: '', shipment: '', sample: '', accepted: '', defective: '', documents: '', body: '', laboratory: '', result: '', agreement: [], notes: '', recipient: '', manufacturerSignature: '', controllerSignature: '', manufacturer: '', codeNo: '', controller: '', qcManager: '', sizes: ['', '', '', '', ''], quantities: Object.fromEntries(quantityRows.map(([key]) => [key, ['', '', '', '', '']])), checks: Object.fromEntries(categories.map(c => [c, {status: '', note: '', code: '', count: ''}])), media: []};
 }
 function normalizeReport(input) {
   const base = createInitial();
   const d = input && typeof input === 'object' ? input : {};
   for (const key of Object.keys(base)) if (typeof base[key] === 'string') base[key] = typeof d[key] === 'string' ? d[key] : '';
+  for (const key of ['manufacturerSignature','controllerSignature']) if (!/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(base[key]) || base[key].length>300000) base[key]='';
   base.sizes = Array.from({length: 5}, (_, i) => String(d.sizes?.[i] ?? ''));
   base.quantities = Object.fromEntries(quantityRows.map(([key]) => [key, Array.from({length: 5}, (_, i) => String(d.quantities?.[key]?.[i] ?? ''))]));
   base.checks = Object.fromEntries(categories.map(c => [c, {status: String(d.checks?.[c]?.status ?? ''), note: String(d.checks?.[c]?.note ?? ''), code: String(d.checks?.[c]?.code ?? ''), count: String(d.checks?.[c]?.count ?? '')}]));

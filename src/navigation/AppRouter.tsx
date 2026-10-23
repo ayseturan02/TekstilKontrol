@@ -5,12 +5,14 @@ import {useApp} from '../context/AppContext';
 import {Button} from '../components/Form';
 import {s} from '../styles';
 import LoginScreen from '../screens/LoginScreen';
+import SplashScreen from '../screens/SplashScreen';
 import ReportFormScreen from '../screens/ReportFormScreen';
 import PreviewScreen from '../screens/PreviewScreen';
 function ReportRouter(){
-  const {ready,draftStatus,save,persist,logout,busy}=useApp();
+  const {ready,draftStatus,save,persist,logout,busy,email}=useApp();
   const [page,setPage]=useState<'form'|'preview'>('form');
   const [menuOpen,setMenuOpen]=useState(false);
+  const profileName=email.trim().split('@')[0].replace(/[._-]+/g,' ') || 'Kullanıcı';
   useEffect(()=>{
     const handler=BackHandler.addEventListener('hardwareBackPress',()=>{if(page==='preview'){setPage('form');return true;}return false;});
     return ()=>handler.remove();
@@ -19,7 +21,12 @@ function ReportRouter(){
   return <SafeAreaView style={s.root}>
     <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
     <View style={s.top}><View style={{flex:1}}><Text style={s.logo}>İNTERNET TEKSTİL</Text><Text style={s.subtitle}>SANAYİ VE TİCARET A.Ş.</Text></View>
-      <TouchableOpacity accessibilityRole="button" accessibilityLabel="Menüyü aç" onPress={()=>setMenuOpen(true)} style={s.menuButton}><Text style={s.menuText}>☰ Menü</Text></TouchableOpacity>
+      <TouchableOpacity accessibilityRole="button" accessibilityLabel="Profili aç" accessibilityState={{expanded:menuOpen}} onPress={()=>setMenuOpen(true)} style={s.profileButton}>
+        <View accessible={false} style={s.profileIcon}>
+          <View style={s.profileHead} />
+          <View style={s.profileShoulders} />
+        </View>
+      </TouchableOpacity>
     </View>
     {!ready?<View style={{flex:1,justifyContent:'center'}}><ActivityIndicator size="large" /></View>:<View style={{flex:1}}>{page==='form'?<ReportFormScreen />:<PreviewScreen />}</View>}
     <View style={[s.footer,{flexWrap:'wrap',paddingHorizontal:14}]}>
@@ -30,11 +37,17 @@ function ReportRouter(){
     </View>
     <Modal visible={menuOpen} transparent animationType="fade" onRequestClose={()=>setMenuOpen(false)}>
       <TouchableOpacity activeOpacity={1} style={s.modalBackdrop} onPress={()=>setMenuOpen(false)}>
-        <View style={s.menuPanel} onStartShouldSetResponder={()=>true}><Text style={s.sideValue}>İNTERNET TEKSTİL</Text>
-          <TouchableOpacity style={s.menuItem} disabled={busy} onPress={()=>{setMenuOpen(false);logout();}}><Text style={s.logoutText}>Çıkış yap →</Text></TouchableOpacity>
+        <View style={s.menuPanel} onStartShouldSetResponder={()=>true}><Text style={s.profileName}>{profileName}</Text>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Çıkış yap" style={[s.menuItem,busy&&s.disabled]} disabled={busy} onPress={()=>{setMenuOpen(false);logout();}}><Text style={s.logoutText}>Çıkış yap</Text></TouchableOpacity>
         </View>
       </TouchableOpacity>
     </Modal>
   </SafeAreaView>;
 }
-export default function AppRouter(){const {token}=useApp();return token?<ReportRouter />:<LoginScreen />;}
+export default function AppRouter(){
+  const {token,sessionReady,ready}=useApp();
+  const [splashDone,setSplashDone]=useState(false);
+  useEffect(()=>{const timer=setTimeout(()=>setSplashDone(true),1000);return ()=>clearTimeout(timer);},[]);
+  if(!splashDone||!sessionReady||!ready)return <SplashScreen />;
+  return token?<ReportRouter />:<LoginScreen />;
+}
