@@ -25,26 +25,20 @@ test('portrait output preserves all eight categories, marks choices and escapes 
   assert.equal((html.match(/&#10003;/g)||[]).length,4);assert.ok(html.includes('Line one\nLine two'));
   assert.ok(!html.includes('[object Object]'));assert.ok(!html.includes('undefined'));
 });
-test('mail body and printable HTML attachment use the same report and preserve media',async()=>{
-  let handler,sent;
-  const app={use(){},post(route,...handlers){if(route==='/send')handler=handlers.at(-1);},listen(){}};
-  const express=()=>app;express.json=()=>()=>{};
-  const multer=()=>({array:()=>()=>{}});multer.memoryStorage=()=>({});
-  const fakeRequire=name=>{
-    if(name==='dotenv')return {config(){}};
-    if(name==='express')return express;
-    if(name==='cors')return ()=>()=>{};
-    if(name==='bcryptjs')return {};
-    if(name==='jsonwebtoken')return {};
-    if(name==='multer')return multer;
-    if(name==='nodemailer')return {createTransport:()=>({sendMail:async message=>{sent=message;}})};
-    if(name==='../shared/reportTemplate')return template;
-    throw Error(name);
-  };
-  vm.runInNewContext(fs.readFileSync(require.resolve('../server/index.js'),'utf8'),{require:fakeRequire,process:{env:{JWT_SECRET:'test',USER_EMAIL:'test@example.com',USER_PASSWORD_HASH:'hash'}},console});
+test('mail body and printable HTML attachment use the same report and preserve media',async t=>{
+  const {createApp}=require('../server/app');
+  const serverRequire=require('node:module').createRequire(require.resolve('../server/app'));
+  const secret='mail-test-secret-at-least-32-characters';
+  const token=serverRequire('jsonwebtoken').sign({version:0},secret,{subject:'test-user',expiresIn:'1h'});
+  let sent;
+  const app=createApp({secret,store:{findById:id=>id==='test-user'?{id,role:'user',authVersion:0}:null},createTransport:()=>({sendMail:async message=>{sent=message;}})});
+  const server=await new Promise(resolve=>{const listener=app.listen(0,'127.0.0.1',()=>resolve(listener));});
+  t.after(()=>new Promise(resolve=>server.close(resolve)));
+  const endpoint='http://127.0.0.1:'+server.address().port+'/send';
   const d=template.createInitial();d.customer='Customer';d.recipient='recipient@example.com';
-  const response={status(){return this;},json(data){this.data=data;return this;}};
-  await handler({body:{report:JSON.stringify(d)},files:[{originalname:'photo.jpg',buffer:Buffer.from('image'),mimetype:'image/jpeg'}]},response);
-  assert.equal(response.data.ok,true);assert.equal(sent.html,template.htmlFor(d));assert.equal(sent.attachments[0].content,sent.html);assert.equal(sent.attachments[1].filename,'photo.jpg');
-  sent=null;d.recipient='recipient@example.com,invalid';await handler({body:{report:JSON.stringify(d)},files:[]},response);assert.equal(sent,null);
+  const form=new FormData();form.append('report',JSON.stringify(d));form.append('files',new Blob(['image'],{type:'image/jpeg'}),'photo.jpg');
+  const response=await fetch(endpoint,{method:'POST',headers:{Authorization:'Bearer '+token},body:form});
+  assert.equal(response.status,200);assert.equal(sent.html,template.htmlFor(d));assert.equal(sent.attachments[0].content,sent.html);assert.equal(sent.attachments[1].filename,'photo.jpg');
+  sent=null;d.recipient='recipient@example.com,invalid';const bad=new FormData();bad.append('report',JSON.stringify(d));
+  assert.equal((await fetch(endpoint,{method:'POST',headers:{Authorization:'Bearer '+token},body:bad})).status,400);assert.equal(sent,null);
 });

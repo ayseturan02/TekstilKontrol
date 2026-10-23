@@ -310,6 +310,119 @@
   };
   window.updateReportMedia = showMedia;
   showMedia(data.media || []);
+  const recipientSelect=document.getElementById('recipient-choice');
+  const recipientInput=document.querySelector('[data-field="recipient"]');
+  const recipientCustom=document.getElementById('recipient-custom');
+  const recipientStatus=document.getElementById('recipient-status');
+  const recipientReload=document.getElementById('recipient-reload');
+  let recipientDialog=null,savedRecipients=[],recipientMessage='',recipientsLoading=false;
+  const recipientNode=(tag,className,text)=>{
+    const node=document.createElement(tag);node.className=className;
+    if(text!==undefined)node.textContent=text;
+    return node;
+  };
+  const recipientEmails=value=>Array.from(new Set(String(value||'').split(',').map(email=>email.trim().toLowerCase()).filter(Boolean)));
+  const validRecipient=email=>email.length<=254&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const paintRecipientTrigger=()=>{
+    if(!recipientSelect||!recipientInput||!recipientCustom)return;
+    const emails=recipientEmails(recipientInput.value);
+    const matched=emails.length===1?savedRecipients.find(item=>item.email.toLowerCase()===emails[0]):null;
+    recipientSelect.value=emails.join(',');recipientSelect.textContent='';
+    const copy=recipientNode('span','recipient-trigger-copy');
+    copy.appendChild(recipientNode('span','recipient-trigger-name',emails.length>1?emails.length+' alıcı seçildi':matched?matched.name||matched.email:emails.length?'1 alıcı seçildi':'Alıcı seçin'));
+    if(emails.length)copy.appendChild(recipientNode('span','recipient-trigger-email',emails.join(', ')));
+    recipientSelect.appendChild(copy);recipientSelect.appendChild(recipientNode('span','recipient-trigger-arrow','⌄'));recipientCustom.hidden=true;
+  };
+  const openRecipientDialog=()=>{
+    if(recipientDialog||!recipientSelect||!recipientInput)return;
+    if(document.activeElement)document.activeElement.blur();
+    const current=recipientEmails(recipientInput.value);
+    let selected=current.slice();
+    const custom=current.filter(email=>!savedRecipients.some(item=>item.email.toLowerCase()===email));
+    const overlay=recipientNode('div','recipient-overlay');overlay.setAttribute('role','dialog');overlay.setAttribute('aria-modal','true');overlay.setAttribute('aria-label','Alıcı seçin');
+    const panel=recipientNode('div','recipient-dialog');
+    const header=recipientNode('div','recipient-dialog-header');
+    header.appendChild(recipientNode('p','recipient-dialog-eyebrow','ADRES DEFTERİ'));
+    header.appendChild(recipientNode('h2','','Alıcıları seçin'));
+    header.appendChild(recipientNode('p','recipient-dialog-description','Bir veya birden fazla kişi seçebilirsiniz.'));
+    const summary=recipientNode('p','recipient-dialog-summary','');header.appendChild(summary);
+    const closeButton=recipientNode('button','recipient-dialog-close','×');closeButton.type='button';closeButton.setAttribute('aria-label','Kapat');header.appendChild(closeButton);panel.appendChild(header);
+    const list=recipientNode('div','recipient-dialog-list');list.setAttribute('role','group');list.setAttribute('aria-label','E-posta alıcıları');
+    const editor=recipientNode('div','recipient-dialog-custom');
+    const customLabel=recipientNode('label','','E-posta ekle');customLabel.setAttribute('for','recipient-dialog-input');editor.appendChild(customLabel);
+    const customInput=recipientNode('input','recipient-dialog-custom-input');customInput.id='recipient-dialog-input';customInput.type='email';customInput.multiple=true;customInput.setAttribute('inputmode','email');customInput.setAttribute('enterkeyhint','done');customInput.setAttribute('spellcheck','false');customInput.value='';customInput.placeholder='ornek@firma.com';customInput.setAttribute('aria-label','E-posta ekle');customInput.setAttribute('autocapitalize','none');customInput.setAttribute('autocomplete','off');const addRow=recipientNode('div','recipient-add-row');addRow.appendChild(customInput);
+    const addButton=recipientNode('button','recipient-add','Ekle');addButton.type='button';addRow.appendChild(addButton);editor.appendChild(addRow);
+    panel.appendChild(editor);panel.appendChild(list);
+    const error=recipientNode('p','recipient-dialog-error','');error.setAttribute('role','alert');panel.appendChild(error);
+    const footer=recipientNode('div','recipient-dialog-footer');
+    const clear=recipientNode('button','recipient-clear','Temizle');clear.type='button';
+    const cancel=recipientNode('button','','Vazgeç');cancel.type='button';
+    const apply=recipientNode('button','recipient-apply','Uygula');apply.type='button';
+    footer.appendChild(clear);footer.appendChild(cancel);footer.appendChild(apply);panel.appendChild(footer);
+    overlay.appendChild(panel);document.body.appendChild(overlay);recipientDialog=overlay;
+    const previousOverflow=document.body.style.overflow;document.body.style.overflow='hidden';recipientSelect.setAttribute('aria-expanded','true');
+    const viewport=window.visualViewport;
+    const positionDialog=()=>{
+      if(!viewport)return;
+      overlay.style.left=viewport.offsetLeft+'px';overlay.style.top=viewport.offsetTop+'px';overlay.style.width=viewport.width+'px';overlay.style.height=viewport.height+'px';overlay.style.right='auto';overlay.style.bottom='auto';
+      panel.style.maxHeight=Math.max(0,viewport.height-24)+'px';panel.style.height=Math.min(640,Math.max(0,viewport.height-24))+'px';
+    };
+    positionDialog();if(viewport){viewport.addEventListener('resize',positionDialog);viewport.addEventListener('scroll',positionDialog);}
+    const close=()=>{
+      if(viewport){viewport.removeEventListener('resize',positionDialog);viewport.removeEventListener('scroll',positionDialog);}
+      document.body.style.overflow=previousOverflow;overlay.remove();recipientDialog=null;recipientSelect.setAttribute('aria-expanded','false');recipientSelect.focus();
+    };
+    overlay.closeRecipient=close;closeButton.onclick=close;cancel.onclick=close;overlay.onclick=event=>{if(event.target===overlay)close();};
+    const updateSummary=()=>{
+      const count=selected.length;
+      summary.textContent=count?count+' alıcı seçildi':'Henüz alıcı seçilmedi';clear.disabled=!count&&!customInput.value;
+    };
+    customInput.oninput=()=>{error.textContent='';updateSummary();};
+    overlay.renderRecipients=()=>{
+      const previousScroll=list.scrollTop||0;list.textContent='';
+      if(recipientsLoading||recipientMessage||!savedRecipients.length)list.appendChild(recipientNode('p','recipient-dialog-status',recipientsLoading?'Kayıtlı adresler yükleniyor…':recipientMessage||'Henüz kayıtlı adres yok. Yukarıdan e-posta ekleyebilirsiniz.'));
+      const addChoice=(value,name,email,icon,checked,onToggle)=>{
+        const button=recipientNode('button','recipient-option');button.type='button';button.dataset.recipientChoice=value;button.setAttribute('role','checkbox');button.setAttribute('aria-checked',String(checked));
+        button.appendChild(recipientNode('span','recipient-option-icon',icon));
+        const copy=recipientNode('span','recipient-option-copy');copy.appendChild(recipientNode('span','recipient-option-name',name));copy.appendChild(recipientNode('span','recipient-option-email',email));button.appendChild(copy);button.appendChild(recipientNode('span','recipient-option-mark',checked?'✓':''));button.onclick=onToggle;list.appendChild(button);
+      };
+      const rows=custom.filter(email=>!savedRecipients.some(item=>item.email.toLowerCase()===email)).map(email=>({email,name:'Eklenen alıcı'})).concat(savedRecipients);
+      rows.forEach(item=>{
+        const email=item.email.toLowerCase();
+        addChoice(email,(item.name||item.email)+(item.isExample?' (Örnek)':''),item.email,(item.name||item.email).slice(0,1).toLocaleUpperCase('tr-TR'),selected.includes(email),()=>{
+          selected=selected.includes(email)?selected.filter(value=>value!==email):selected.concat(email);error.textContent='';overlay.renderRecipients();
+        });
+      });
+      list.scrollTop=previousScroll;updateSummary();
+    };
+    const addEmails=()=>{
+      const extra=recipientEmails(customInput.value);
+      if(!extra.length||extra.some(email=>!validRecipient(email))){error.textContent='Geçerli bir e-posta adresi girin.';customInput.focus();return false;}
+      const next=recipientEmails(selected.concat(extra).join(','));
+      if(next.join(', ').length>4000){error.textContent='Alıcı adresleri için ayrılan alan doldu.';return false;}
+      extra.forEach(email=>{if(!custom.includes(email)&&!savedRecipients.some(item=>item.email.toLowerCase()===email))custom.unshift(email);});
+      selected=next;customInput.value='';error.textContent='';overlay.renderRecipients();list.scrollTop=0;return true;
+    };
+    addButton.onclick=()=>{if(addEmails())customInput.focus();};
+    customInput.onkeydown=event=>{if(event.key==='Enter'){event.preventDefault();addButton.onclick();}};
+    clear.onclick=()=>{selected=[];customInput.value='';error.textContent='';overlay.renderRecipients();};
+    apply.onclick=()=>{
+      if(customInput.value.trim()&&!addEmails())return;
+      const value=selected.join(', ');
+      recipientInput.value=value;post({type:'field',path:'recipient',value});paintRecipientTrigger();close();
+    };
+    overlay.renderRecipients();closeButton.focus();
+  };
+  window.updateReportRecipients=(items,status,loading)=>{
+    if(!recipientSelect||!recipientInput||!recipientCustom)return;
+    savedRecipients=(Array.isArray(items)?items:[]).filter(item=>typeof item.email==='string'&&validRecipient(item.email));
+    recipientMessage=status||'';recipientsLoading=!!loading;paintRecipientTrigger();
+    if(recipientStatus)recipientStatus.textContent=loading?'Kayıtlı adresler yükleniyor…':status||'Birden fazla alıcı seçebilir, yeni e-posta adresleri ekleyebilirsiniz.';
+    if(recipientReload)recipientReload.disabled=!!loading;
+    if(recipientDialog)recipientDialog.renderRecipients();
+  };
+  if(recipientSelect&&recipientInput&&recipientCustom){recipientSelect.onclick=openRecipientDialog;window.updateReportRecipients([], '', false);}
+
   document.querySelectorAll('[data-action]').forEach(button => button.onclick = () => {
     var _document$querySelect;
     return post({
@@ -319,7 +432,7 @@
     });
   });
   document.addEventListener('keydown', event => {
-    if (event.key === 'Escape') {if(signatureDialog){signatureDialog.closeSignature();return;}back.click();}
+    if (event.key === 'Escape') {if(recipientDialog){recipientDialog.closeRecipient();return;}if(signatureDialog){signatureDialog.closeSignature();return;}back.click();}
   });
   paint();
   post({

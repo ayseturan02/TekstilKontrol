@@ -76,3 +76,10 @@ yarn-error.log
 
 # Local report preview browser profile
 /artifacts/chrome-profile/
+
+# Private API configuration and user records
+.env
+.env.*
+!.env.example
+/server/data/
+*.log

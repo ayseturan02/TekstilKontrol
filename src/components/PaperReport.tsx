@@ -3,13 +3,14 @@ import {Platform, View} from 'react-native';
 import DateTimePicker, {DateTimePickerAndroid} from '@react-native-community/datetimepicker';
 import {WebView, WebViewMessageEvent} from 'react-native-webview';
 import {buildPaperDocument, layout, layoutForReport, valueAt} from '../../shared/paperLayout';
+import {SavedRecipient} from '../../shared/recipients';
 export type PaperField = {path:string;label:string;multiline?:boolean;numeric?:boolean};
 export const paperFields:PaperField[] = layout.fields;
 export const fieldValue = (data:any,path:string):string => String(valueAt(data,path));
 const textPaths=new Set(layout.fields.map(field=>field.path));
 const choicePaths=new Set(layout.choices.map(choice=>choice.path));
-type Props={data:any;readOnly?:boolean;showSend?:boolean;onChange?:(path:string,value:any)=>void;onAction?:(action:string,detail:any)=>void};
-export default function PaperReport({data,readOnly=false,showSend=false,onChange,onAction}:Props){
+type Props={data:any;recipients?:SavedRecipient[];recipientStatus?:string;recipientLoading?:boolean;readOnly?:boolean;showSend?:boolean;onChange?:(path:string,value:any)=>void;onAction?:(action:string,detail:any)=>void};
+export default function PaperReport({data,readOnly=false,showSend=false,recipients=[],recipientStatus='',recipientLoading=false,onChange,onAction}:Props){
   const web=useRef<WebView<{}>>(null);
   const initialData=useRef(data);
   const [showDate,setShowDate]=useState(false);
@@ -38,9 +39,11 @@ export default function PaperReport({data,readOnly=false,showSend=false,onChange
   useEffect(()=>{syncLayout();},[data]);
   const syncSignatures=()=>web.current?.injectJavaScript('window.updateReportSignatures && window.updateReportSignatures('+JSON.stringify({manufacturerSignature:data.manufacturerSignature||'',controllerSignature:data.controllerSignature||''})+');true;');
   useEffect(()=>{syncSignatures();},[data.manufacturerSignature,data.controllerSignature]);
+  const syncRecipients=()=>{if(showSend)web.current?.injectJavaScript('window.updateReportRecipients && window.updateReportRecipients('+JSON.stringify(recipients)+','+JSON.stringify(recipientStatus)+','+JSON.stringify(recipientLoading)+');true;');};
+  useEffect(()=>{syncRecipients();},[recipients,recipientStatus,recipientLoading,showSend]);
   const message=(event:WebViewMessageEvent)=>{
     let payload:any;try{payload=JSON.parse(event.nativeEvent.data);}catch{return;}
-    if(payload.type==='ready'){syncMedia();syncLayout();syncDate();syncSignatures();return;}
+    if(payload.type==='ready'){syncMedia();syncLayout();syncDate();syncSignatures();syncRecipients();return;}
     if(payload.type==='signature'&&!readOnly&&['manufacturerSignature','controllerSignature'].includes(payload.path)&&typeof payload.value==='string'&&payload.value.length<=300000&&(payload.value===''||/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(payload.value))){onChange?.(payload.path,payload.value);return;}
     if(payload.type==='field'&&typeof payload.value==='string'&&payload.value.length<=4000){
       if((!readOnly&&textPaths.has(payload.path))||(showSend&&payload.path==='recipient'))onChange?.(payload.path,payload.value);
